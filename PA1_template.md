@@ -9,6 +9,8 @@ March 18, 2017
 ```r
 library(plyr)
 library(ggplot2)
+library(chron)
+
 unzip(zipfile="activity.zip")
 raw_data <- read.csv("activity.csv")
 ```
@@ -20,7 +22,7 @@ steps_per_day <- with(raw_data,tapply(steps,date,sum,na.rm=TRUE))
 hist(steps_per_day,breaks=25,col="light blue",main="Histogram of steps in original data")
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-2-1.png)<!-- -->
+![](figure/compute_original-1.png)<!-- -->
 
 ```r
 mean_steps_per_day <- mean(steps_per_day)
@@ -43,7 +45,7 @@ interval_plot <- qplot(interval,interval_means) +
 print(interval_plot)
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
+![](figure/average_intervals-1.png)<!-- -->
 
 ```r
 peak_interval <- which.max(interval_means)
@@ -72,7 +74,7 @@ new_steps_per_day <- with(infilled,tapply(steps,date,sum,na.rm=TRUE))
 hist(new_steps_per_day,breaks=25,col="light blue",main="Histogram of steps in infilled data")
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-5-1.png)<!-- -->
+![](figure/imputed_stats-1.png)<!-- -->
 
 ```r
 new_mean_steps_per_day <- mean(new_steps_per_day)
@@ -82,6 +84,20 @@ new_median_steps_per_day <- median(new_steps_per_day)
 After replacing missing values,  
 
 The new mean number of steps per day is 10766.2
-The new median number of steps per day is 10766.188679.1
+The new median number of steps per day is 10766.2 
+
+Both the mean and median were raised after imputing missing data in this way.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```r
+labeled <- mutate(raw_data,w =as.factor(ifelse(is.weekend(date),"weekend","weekday")))
+breakdown <- with(labeled,tapply(steps,list("w"=w,"interval"=interval),mean,na.rm=TRUE))
+par(mfrow=c(2,1))
+plot(interval,breakdown[1,],type="l",xlab="interval",ylab="steps",main="Weekday Pattern")
+plot(interval,breakdown[2,],type="l",xlab="interval",ylab="steps",main="Weekend Pattern")
+```
+
+![](figure/weekend_or_not-1.png)<!-- -->
+
+On weekdays, there is a higher level of activity in the mornings.  On weekends, the overall activity level is higher and more varried.

@@ -7,21 +7,24 @@ output:
     keep_md: true
 ---
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+                      fig.path = 'figure/')
 ```
 
 
 ## Loading and preprocessing the data
-```{r}
+```{r load_data}
 library(plyr)
 library(ggplot2)
+library(chron)
+
 unzip(zipfile="activity.zip")
 raw_data <- read.csv("activity.csv")
 
 ```
 
 ## What is mean total number of steps taken per day?
-```{r}
+```{r compute_original}
 steps_per_day <- with(raw_data,tapply(steps,date,sum,na.rm=TRUE))
 hist(steps_per_day,breaks=25,col="light blue",main="Histogram of steps in original data")
 mean_steps_per_day <- mean(steps_per_day)
@@ -32,7 +35,7 @@ The mean number of steps per day is `r sprintf("%6.1f",mean_steps_per_day)`
 The median number of steps per day is `r sprintf("%6d",median_steps_per_day)`
 
 ## What is the average daily activity pattern?
-```{r}
+```{r average_intervals}
 interval_means <- with(raw_data,tapply(steps,interval,mean,na.rm=TRUE))
 interval <- unique(raw_data$interval)
 interval_plot <- qplot(interval,interval_means) + 
@@ -49,7 +52,7 @@ peak_index <- peak_interval[[1]]
 The interval with maximum number of steps, averaged across all days in the datasets, is `r peak_time`, the `r peak_index`-th interval
 
 ## Imputing missing values
-```{r,results="hide"}
+```{r imput_missing,results="hide"}
 missing_count = sum(is.na(raw_data$steps))
 my_lookup <- data.frame(interval,interval_means)
 infilled <- merge(raw_data,my_lookup)
@@ -60,7 +63,7 @@ There are `r missing_count` missing values.
 
 After replacing missing values with the mean over days by interval, a histogram looks like the following:
 
-```{r}
+```{r imputed_stats}
 new_steps_per_day <- with(infilled,tapply(steps,date,sum,na.rm=TRUE))
 hist(new_steps_per_day,breaks=25,col="light blue",main="Histogram of steps in infilled data")
 new_mean_steps_per_day <- mean(new_steps_per_day)
@@ -71,6 +74,18 @@ new_median_steps_per_day <- median(new_steps_per_day)
 After replacing missing values,  
 
 The new mean number of steps per day is `r sprintf("%6.1f",new_mean_steps_per_day)`
-The new median number of steps per day is `r sprintf("%6f.1",new_median_steps_per_day)`
+The new median number of steps per day is `r sprintf("%6.1f",new_median_steps_per_day)` 
+
+Both the mean and median were raised after imputing missing data in this way.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r weekend_or_not}
+
+labeled <- mutate(raw_data,w =as.factor(ifelse(is.weekend(date),"weekend","weekday")))
+breakdown <- with(labeled,tapply(steps,list("w"=w,"interval"=interval),mean,na.rm=TRUE))
+par(mfrow=c(2,1))
+plot(interval,breakdown[1,],type="l",xlab="interval",ylab="steps",main="Weekday Pattern")
+plot(interval,breakdown[2,],type="l",xlab="interval",ylab="steps",main="Weekend Pattern")
+```
+
+On weekdays, there is a higher level of activity in the mornings.  On weekends, the overall activity level is higher and more varried.
